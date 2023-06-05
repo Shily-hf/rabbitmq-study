@@ -21,23 +21,60 @@ public class ConfirmConfig {
     // RoutingKey
     public static final String CONFIRM_ROUTING_KEY = "key1";
 
+    //备份交换机
+    public static final String BACKUP_EXCHANGE_NAME = "backup.exchange";
+    //备份队列
+    public static final String BACKUP_QUEUE_NAME = "backup.queue";
+    //报警队列
+    public static final String WARNING_QUEUE_NAME = "warning.queue";
+
     //声明交换机
     @Bean("confirmExchange")
     public DirectExchange confirmExchange(){
 
-        return new DirectExchange(CONFIRM_EXCHANGE_NAME);
+        return ExchangeBuilder.directExchange(CONFIRM_EXCHANGE_NAME).durable(true)
+                .withArgument("alternate-exchange",BACKUP_EXCHANGE_NAME).build();
+    }
+
+    @Bean("backupExchange")
+    public FanoutExchange backupExchange(){
+
+        return new FanoutExchange(BACKUP_EXCHANGE_NAME);
     }
 
     //声明队列
     @Bean("confirmQueue")
-    public Queue confirmQueue(){
+    public Queue backupQueue(){
 
         return new Queue(CONFIRM_QUEUE_NAME);
     }
+    @Bean("backupQueue")
+    public Queue confirmQueue(){
+
+        return new Queue(BACKUP_QUEUE_NAME);
+    }
+
+    @Bean("warningQueue")
+    public Queue warningQueue(){
+
+        return new Queue(WARNING_QUEUE_NAME);
+    }
+
+
 
     //绑定交换机
     @Bean
     public Binding queueBindingExchange(@Qualifier("confirmExchange") DirectExchange confirmExchange,@Qualifier("confirmQueue") Queue confirmQueue){
         return BindingBuilder.bind(confirmQueue).to(confirmExchange).with(CONFIRM_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding backupQueueBindingBackupExchange(@Qualifier("backupExchange") FanoutExchange backupExchange,@Qualifier("backupQueue") Queue backupQueue){
+        return BindingBuilder.bind(backupQueue).to(backupExchange);
+    }
+
+    @Bean
+    public Binding warningQueueBindingBackupExchange(@Qualifier("backupExchange") FanoutExchange backupExchange,@Qualifier("warningQueue") Queue warningQueue){
+        return BindingBuilder.bind(warningQueue).to(backupExchange);
     }
 }
